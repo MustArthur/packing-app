@@ -1,0 +1,15 @@
+import styles from './Header.module.css';
+import { PackageCheck } from 'lucide-react';
+
+export default function Header() {
+    return (
+        <header className={styles.header}>
+            <div className="container">
+                <div className={styles.content}>
+                    <PackageCheck className={styles.icon} size={28} />
+                    <h1 className={styles.title}>PackVerify</h1>
+                </div>
+            </div>
+        </header>
+    );
+}
