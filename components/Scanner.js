@@ -148,11 +148,24 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                         <div className={styles.loading}>Initializing Camera...</div>
                     )}
 
-                    // 3. Start scanning.
-                    // 4. If switch clicked, stop, update index, start with new index.
-
-                    // Let's rewrite the component slightly to handle this better.
-                    // For now, I will just add the button and logic to the existing structure.
+                    {/* Manual Input Toggle for testing/fallback */}
+                    <div className={styles.manualToggle}>
+                        {devices.length > 1 && (
+                            <button
+                                className={styles.textBtn}
+                                onClick={handleSwitchCamera}
+                                style={{ marginRight: '1rem' }}
+                            >
+                                ⟳ Switch Cam
+                            </button>
+                        )}
+                        <button
+                            className={styles.textBtn}
+                            onClick={() => setShowManual(!showManual)}
+                        >
+                            {showManual ? 'Show Camera' : 'Enter Code Manually'}
+                        </button>
+                    </div>
 
 
                     {showManual && (
