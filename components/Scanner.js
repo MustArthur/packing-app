@@ -6,6 +6,7 @@ import styles from './Scanner.module.css';
 import clsx from 'clsx';
 
 export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
+    // Scanner component with camera switching
     const scannerRef = useRef(null);
     const [error, setError] = useState(null);
     const [hasPermission, setHasPermission] = useState(false);
