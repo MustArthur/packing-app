@@ -9,29 +9,58 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
     const scannerRef = useRef(null);
     const [error, setError] = useState(null);
     const [hasPermission, setHasPermission] = useState(false);
+    const [devices, setDevices] = useState([]);
+    const [activeDeviceId, setActiveDeviceId] = useState(null);
 
+    // Initialize cameras on mount
     useEffect(() => {
+        let isMounted = true;
+        Html5Qrcode.getCameras().then(cameras => {
+            if (!isMounted) return;
+            if (cameras && cameras.length) {
+                setDevices(cameras);
+
+                // Smart selection: Prefer back camera
+                const backCamera = cameras.find(device =>
+                    device.label.toLowerCase().includes('back') ||
+                    device.label.toLowerCase().includes('environment')
+                );
+
+                if (backCamera) {
+                    setActiveDeviceId(backCamera.id);
+                } else {
+                    // Fallback to last camera (often back on mobile) or first
+                    setActiveDeviceId(cameras[cameras.length - 1].id);
+                }
+            } else {
+                setError("No camera found.");
+            }
+        }).catch(err => {
+            if (!isMounted) return;
+            console.error("Camera enumeration error", err);
+            setError("Camera permission denied or no camera found.");
+        });
+
+        return () => { isMounted = false; };
+    }, []);
+
+    // Handle Scanning
+    useEffect(() => {
+        if (!isScanning || !activeDeviceId) return;
+
         const scannerId = "reader";
         let isMounted = true;
         let html5QrCode;
 
         const startScanning = async () => {
             try {
-                // Wait a bit for the DOM to be ready and any previous cleanup to finish
-                await new Promise(r => setTimeout(r, 100));
-                if (!isMounted) return;
+                if (!document.getElementById(scannerId)) return;
 
-                if (!document.getElementById(scannerId)) {
-                    console.warn("Scanner element not found");
-                    return;
-                }
-
-                // Always create a new instance for this mount
                 html5QrCode = new Html5Qrcode(scannerId);
+                scannerRef.current = html5QrCode;
 
                 const config = {
                     fps: 10,
-                    // Use a rectangular box for better barcode scanning (EAN-13 is wide)
                     qrbox: { width: 300, height: 150 },
                     aspectRatio: 1.0,
                     formatsToSupport: [
@@ -43,90 +72,40 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                     ]
                 };
 
-                // Explicitly check for cameras first
-                const devices = await Html5Qrcode.getCameras();
+                await html5QrCode.start(
+                    activeDeviceId,
+                    config,
+                    (decodedText) => {
+                        if (isMounted) onScan(decodedText);
+                    },
+                    (errorMessage) => { }
+                );
 
-                if (devices && devices.length) {
-                    // Default to the first camera
-                    let cameraId = devices[0].id;
-
-                    // Try to find a back/environment camera if multiple exist
-                    if (devices.length > 1) {
-                        const backCamera = devices.find(device =>
-                            device.label.toLowerCase().includes('back') ||
-                            device.label.toLowerCase().includes('environment')
-                        );
-                        if (backCamera) {
-                            cameraId = backCamera.id;
-                        } else {
-                            // If no clear back camera, usually the last one is the back camera on mobile
-                            cameraId = devices[devices.length - 1].id;
-                        }
-                    }
-
-                    await html5QrCode.start(
-                        cameraId,
-                        config,
-                        (decodedText) => {
-                            if (isMounted) onScan(decodedText);
-                        },
-                        (errorMessage) => {
-                            // ignore
-                        }
-                    );
-                } else {
-                    // Fallback: try generic "user" facing mode if enumeration returned nothing but didn't throw
-                    // This is rare but possible in some privacy modes
-                    await html5QrCode.start(
-                        { facingMode: "user" },
-                        config,
-                        (decodedText) => {
-                            if (isMounted) onScan(decodedText);
-                        },
-                        (errorMessage) => { }
-                    );
-                }
-
-                // Only set ref AFTER start is successful
-                if (isMounted) {
-                    scannerRef.current = html5QrCode;
-                    setHasPermission(true);
-                } else {
-                    html5QrCode.stop().then(() => html5QrCode.clear()).catch(() => { });
-                }
+                if (isMounted) setHasPermission(true);
             } catch (err) {
                 if (isMounted) {
                     console.error("Error starting scanner", err);
-                    if (err?.name === 'NotAllowedError') {
-                        setError("Camera permission denied.");
-                    } else if (err?.name === 'NotFoundError') {
-                        setError("No camera found on this device.");
-                    } else {
-                        setError("Failed to start camera: " + (err.message || "Unknown error"));
-                    }
+                    setError("Failed to start camera. Please check permissions.");
                 }
             }
         };
 
-        if (isScanning) {
-            startScanning();
-        }
+        startScanning();
 
         return () => {
             isMounted = false;
-            if (scannerRef.current) {
-                const scannerToStop = scannerRef.current;
-                scannerRef.current = null;
-
-                scannerToStop.stop().then(() => {
-                    return scannerToStop.clear();
-                }).catch(err => {
-                    // Ignore "not running" errors which happen if start failed or was cancelled
-                    console.warn("Scanner cleanup warning:", err);
-                });
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => html5QrCode.clear()).catch(console.warn);
             }
         };
-    }, [isScanning, onScan]);
+    }, [isScanning, activeDeviceId, onScan]);
+
+    const handleSwitchCamera = () => {
+        if (devices.length < 2) return;
+        const currentIndex = devices.findIndex(d => d.id === activeDeviceId);
+        const nextIndex = (currentIndex + 1) % devices.length;
+        setActiveDeviceId(devices[nextIndex].id);
+    };
 
     const [manualCode, setManualCode] = useState('');
     const [showManual, setShowManual] = useState(false);
@@ -169,15 +148,12 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                         <div className={styles.loading}>Initializing Camera...</div>
                     )}
 
-                    {/* Manual Input Toggle for testing/fallback */}
-                    <div className={styles.manualToggle}>
-                        <button
-                            className={styles.textBtn}
-                            onClick={() => setShowManual(!showManual)}
-                        >
-                            {showManual ? 'Show Camera' : 'Enter Code Manually'}
-                        </button>
-                    </div>
+                    // 3. Start scanning.
+                    // 4. If switch clicked, stop, update index, start with new index.
+
+                    // Let's rewrite the component slightly to handle this better.
+                    // For now, I will just add the button and logic to the existing structure.
+
 
                     {showManual && (
                         <div className={styles.manualOverlay}>
