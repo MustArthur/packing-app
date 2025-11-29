@@ -18,13 +18,18 @@ export default function Home() {
   const [completed, setCompleted] = useState(false);
 
   // Check if all items are complete
+  // Check if all items are complete
   useEffect(() => {
     if (items.length > 0) {
       const allComplete = items.every(item => item.scannedQty >= item.qtyRequired);
       if (allComplete && !completed) {
-        setCompleted(true);
         setIsScanning(false);
-        playSuccessSound(); // Celebration sound
+        // Delay completion state to allow scanner to cleanup gracefully
+        // and prevent race conditions with DOM removal
+        setTimeout(() => {
+          setCompleted(true);
+          playSuccessSound();
+        }, 500);
       }
     }
   }, [items, completed]);
