@@ -16,6 +16,10 @@ export default function Login({ onLogin }) {
 
         try {
             // Check if username exists in profiles table
+            if (!supabase) {
+                throw new Error("Supabase not configured. Please check connection.");
+            }
+
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
