@@ -96,23 +96,32 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
         return () => {
             isMounted = false;
             if (html5QrCode) {
-                html5QrCode.stop()
-                    .catch(err => {
-                        // Ignore "not running" errors
-                        console.warn("Scanner stop warning:", err);
-                    })
-                    .then(() => {
-                        // Only attempt to clear if the element still exists in DOM
-                        // and catch any errors to prevent app crash
-                        if (document.getElementById(scannerId)) {
-                            return html5QrCode.clear().catch(err => {
-                                console.warn("Scanner clear warning:", err);
-                            });
+                // Robust cleanup sequence
+                const cleanup = async () => {
+                    try {
+                        // Attempt to stop
+                        try {
+                            if (html5QrCode.isScanning) {
+                                await html5QrCode.stop();
+                            }
+                        } catch (err) {
+                            console.warn("Scanner stop ignored:", err);
                         }
-                    })
-                    .catch(err => {
-                        console.warn("Scanner cleanup error:", err);
-                    });
+
+                        // Attempt to clear if element exists
+                        if (document.getElementById(scannerId)) {
+                            try {
+                                await html5QrCode.clear();
+                            } catch (err) {
+                                console.warn("Scanner clear ignored:", err);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Scanner cleanup failed:", err);
+                    }
+                };
+
+                cleanup();
             }
         };
     }, [isScanning, activeDeviceId, onScan]);
