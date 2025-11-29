@@ -24,7 +24,7 @@ export default function Login({ onLogin }) {
                 .from('profiles')
                 .select('*')
                 .eq('username', username.trim())
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
 
