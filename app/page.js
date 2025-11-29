@@ -134,22 +134,24 @@ export default function Home() {
           </div>
         )}
 
-        {/* Scanner Section */}
-        {!completed && (
-          <div className="card" style={{ padding: '0.5rem', background: '#000' }}>
-            <Scanner
-              onScan={handleScan}
-              isScanning={isScanning}
-            />
-            <button
-              className="btn btn-primary"
-              style={{ width: '100%', marginTop: '0.5rem' }}
-              onClick={() => setIsScanning(!isScanning)}
-            >
-              {isScanning ? 'Stop Camera' : (orderId ? 'Scan Item' : 'Scan Carton QR')}
-            </button>
-          </div>
-        )}
+        {/* Scanner Section - Hidden when completed instead of unmounted to prevent DOM errors */}
+        <div className="card" style={{
+          padding: '0.5rem',
+          background: '#000',
+          display: completed ? 'none' : 'block'
+        }}>
+          <Scanner
+            onScan={handleScan}
+            isScanning={isScanning}
+          />
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: '0.5rem' }}
+            onClick={() => setIsScanning(!isScanning)}
+          >
+            {isScanning ? 'Stop Camera' : (orderId ? 'Scan Item' : 'Scan Carton QR')}
+          </button>
+        </div>
 
         {/* Packing List */}
         {items.length > 0 && (
