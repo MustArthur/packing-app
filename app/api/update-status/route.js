@@ -9,7 +9,7 @@ export async function POST(request) {
     try {
         const { orderId, status, timestamp, checkedBy } = await request.json();
 
-        const res = await fetch(n8nUrl, {
+        const res = await fetch(`${n8nUrl}/update-status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
