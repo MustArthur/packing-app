@@ -7,14 +7,20 @@ export async function POST(request) {
     }
 
     try {
-        const body = await request.json();
+        const { orderId, status, timestamp, checkedBy } = await request.json();
 
-        const res = await fetch(`${n8nUrl}/update-status`, {
+        const res = await fetch(n8nUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                action: 'update_status',
+                orderId,
+                status,
+                timestamp,
+                checkedBy
+            })
         });
 
         if (!res.ok) {

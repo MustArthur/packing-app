@@ -5,11 +5,13 @@ import Header from '@/components/Header';
 import Scanner from '@/components/Scanner';
 import PackingList from '@/components/PackingList';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
+import Login from '@/components/Login';
 import { fetchOrder, updateOrderStatus } from '@/services/api';
 import { playSuccessSound, playErrorSound } from '@/utils/sound';
 import { ScanLine, CheckCircle, RefreshCw } from 'lucide-react';
 
 export default function Home() {
+  const [user, setUser] = useState(null);
   const [orderId, setOrderId] = useState(null);
   const [items, setItems] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -17,7 +19,6 @@ export default function Home() {
   const [feedback, setFeedback] = useState({ visible: false, type: '', message: '' });
   const [completed, setCompleted] = useState(false);
 
-  // Check if all items are complete
   // Check if all items are complete
   useEffect(() => {
     if (items.length > 0) {
@@ -98,7 +99,7 @@ export default function Home() {
       await updateOrderStatus(orderId, {
         status: 'Completed',
         timestamp: new Date().toISOString(),
-        checkedBy: 'User' // In real app, get from auth
+        checkedBy: user?.username || 'Unknown'
       });
       alert('Job Closed Successfully!');
       // Reset
@@ -112,9 +113,13 @@ export default function Home() {
     }
   };
 
+  if (!user) {
+    return <Login onLogin={setUser} />;
+  }
+
   return (
     <main style={{ minHeight: '100vh', paddingBottom: '2rem' }}>
-      <Header />
+      <Header user={user} />
 
       <FeedbackOverlay
         visible={feedback.visible}
