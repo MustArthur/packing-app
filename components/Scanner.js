@@ -96,7 +96,23 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
         return () => {
             isMounted = false;
             if (html5QrCode) {
-                html5QrCode.stop().then(() => html5QrCode.clear()).catch(console.warn);
+                html5QrCode.stop()
+                    .catch(err => {
+                        // Ignore "not running" errors
+                        console.warn("Scanner stop warning:", err);
+                    })
+                    .then(() => {
+                        // Only attempt to clear if the element still exists in DOM
+                        // and catch any errors to prevent app crash
+                        if (document.getElementById(scannerId)) {
+                            return html5QrCode.clear().catch(err => {
+                                console.warn("Scanner clear warning:", err);
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.warn("Scanner cleanup error:", err);
+                    });
             }
         };
     }, [isScanning, activeDeviceId, onScan]);
