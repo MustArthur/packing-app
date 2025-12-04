@@ -64,6 +64,11 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                     fps: 10,
                     qrbox: { width: 300, height: 150 },
                     aspectRatio: 1.0,
+                    videoConstraints: {
+                        width: 1280,
+                        height: 720,
+                        focusMode: "continuous"
+                    },
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,

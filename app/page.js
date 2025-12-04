@@ -68,13 +68,16 @@ export default function Home() {
       }
     } else {
       // Step 2: Scan Item Barcode
-      // Normalize code to string and trim
-      const normalizedCode = String(code).trim();
+      // Normalize: strip leading zeros and whitespace
+      const cleanCode = String(code).trim().replace(/^0+/, '');
 
-      const itemIndex = items.findIndex(i => String(i.sku).trim() === normalizedCode);
+      const itemIndex = items.findIndex(i => {
+        const cleanSku = String(i.sku).trim().replace(/^0+/, '');
+        return cleanSku === cleanCode || cleanSku.endsWith(cleanCode) || cleanCode.endsWith(cleanSku);
+      });
 
       if (itemIndex === -1) {
-        showFeedback('error', 'Wrong Item!');
+        showFeedback('error', `Wrong Item! Scanned: ${code}`);
         return;
       }
 
