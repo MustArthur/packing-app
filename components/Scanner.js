@@ -64,10 +64,6 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                     fps: 10,
                     qrbox: { width: 300, height: 150 },
                     aspectRatio: 1.0,
-                    videoConstraints: {
-                        width: { min: 640, ideal: 720, max: 1280 },
-                        height: { min: 480, ideal: 720, max: 720 },
-                    },
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,
@@ -76,6 +72,9 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                         Html5QrcodeSupportedFormats.QR_CODE,
                     ]
                 };
+
+                // Small delay to ensure previous camera is fully released
+                await new Promise(r => setTimeout(r, 300));
 
                 await html5QrCode.start(
                     activeDeviceId,
