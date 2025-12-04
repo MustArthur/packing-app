@@ -65,9 +65,8 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                     qrbox: { width: 300, height: 150 },
                     aspectRatio: 1.0,
                     videoConstraints: {
-                        width: 1280,
-                        height: 720,
-                        focusMode: "continuous"
+                        width: { min: 640, ideal: 720, max: 1280 },
+                        height: { min: 480, ideal: 720, max: 720 },
                     },
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
@@ -149,6 +148,8 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
         }
     };
 
+    const activeDeviceLabel = devices.find(d => d.id === activeDeviceId)?.label || 'Unknown Camera';
+
     return (
         <div className={styles.scannerWrapper}>
             {error ? (
@@ -177,6 +178,23 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                     <div id="reader" className={clsx(styles.scanner, (!isScanning || showManual) && styles.hidden)}></div>
                     {!hasPermission && isScanning && !error && (
                         <div className={styles.loading}>Initializing Camera...</div>
+                    )}
+
+                    {/* Debug Info: Show Active Camera */}
+                    {isScanning && !showManual && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '10px',
+                            left: '10px',
+                            background: 'rgba(0,0,0,0.5)',
+                            color: '#fff',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '10px',
+                            zIndex: 10
+                        }}>
+                            {activeDeviceLabel}
+                        </div>
                     )}
 
                     {/* Manual Input Toggle for testing/fallback */}
