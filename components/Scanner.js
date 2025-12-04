@@ -13,6 +13,12 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
     const [devices, setDevices] = useState([]);
     const [activeDeviceId, setActiveDeviceId] = useState(null);
 
+    // Keep reference to onScan to avoid restarting scanner when parent state changes
+    const onScanRef = useRef(onScan);
+    useEffect(() => {
+        onScanRef.current = onScan;
+    }, [onScan]);
+
     // Initialize cameras on mount
     useEffect(() => {
         let isMounted = true;
@@ -60,13 +66,12 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                 html5QrCode = new Html5Qrcode(scannerId);
                 scannerRef.current = html5QrCode;
 
-                // Detect iOS
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
                 const config = {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
                     aspectRatio: 1.0,
+                    // Use simple config for maximum compatibility
+                    // Complex constraints often break camera switching
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,
@@ -76,15 +81,6 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                     ]
                 };
 
-                // Only apply specific video constraints for non-iOS (Android/Desktop)
-                // iOS handles camera switching better without these constraints
-                if (!isIOS) {
-                    config.videoConstraints = {
-                        width: { ideal: 1280 },
-                        focusMode: "continuous"
-                    };
-                }
-
                 // Small delay to ensure previous camera is fully released
                 await new Promise(r => setTimeout(r, 300));
 
@@ -92,7 +88,9 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                     activeDeviceId,
                     config,
                     (decodedText) => {
-                        if (isMounted) onScan(decodedText);
+                        if (isMounted && onScanRef.current) {
+                            onScanRef.current(decodedText);
+                        }
                     },
                     (errorMessage) => { }
                 );
@@ -139,7 +137,7 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                 cleanup();
             }
         };
-    }, [isScanning, activeDeviceId, onScan]);
+    }, [isScanning, activeDeviceId]); // Removed onScan from dependencies
 
     const handleSwitchCamera = () => {
         if (devices.length < 2) return;
