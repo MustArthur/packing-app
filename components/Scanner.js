@@ -60,14 +60,13 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                 html5QrCode = new Html5Qrcode(scannerId);
                 scannerRef.current = html5QrCode;
 
+                // Detect iOS
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
                 const config = {
                     fps: 10,
-                    qrbox: { width: 250, height: 250 }, // Square box for better versatility
+                    qrbox: { width: 250, height: 250 },
                     aspectRatio: 1.0,
-                    videoConstraints: {
-                        width: { ideal: 1280 }, // Ideal resolution for performance
-                        focusMode: "continuous" // Fix for Android slow focus
-                    },
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,
@@ -76,6 +75,15 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
                         Html5QrcodeSupportedFormats.QR_CODE,
                     ]
                 };
+
+                // Only apply specific video constraints for non-iOS (Android/Desktop)
+                // iOS handles camera switching better without these constraints
+                if (!isIOS) {
+                    config.videoConstraints = {
+                        width: { ideal: 1280 },
+                        focusMode: "continuous"
+                    };
+                }
 
                 // Small delay to ensure previous camera is fully released
                 await new Promise(r => setTimeout(r, 300));
