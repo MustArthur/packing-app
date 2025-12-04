@@ -62,8 +62,12 @@ export default function Scanner({ onScan, isScanning, scanDelay = 500 }) {
 
                 const config = {
                     fps: 10,
-                    qrbox: { width: 300, height: 150 },
+                    qrbox: { width: 250, height: 250 }, // Square box for better versatility
                     aspectRatio: 1.0,
+                    videoConstraints: {
+                        width: { ideal: 1280 }, // Ideal resolution for performance
+                        focusMode: "continuous" // Fix for Android slow focus
+                    },
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,
